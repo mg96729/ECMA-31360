@@ -183,6 +183,10 @@ str(x)
 x
 is.list(x)
 
+x = list()
+x
+x <- append(x, 3)
+x
 # Access the 2nd element of a list by position
 print(paste("This is the 2nd element of list x = ", x[[2]]))
 

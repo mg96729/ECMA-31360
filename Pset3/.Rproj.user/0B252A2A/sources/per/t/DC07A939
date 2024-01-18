@@ -3,7 +3,7 @@
     "path": "D:/ECMA 31360/R Files/Tutorial.R",
     "project_path": null,
     "type": "r_source",
-    "hash": "65107623",
+    "hash": "1160560955",
     "contents": "",
     "dirty": false,
     "created": 1705454505055.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "500,21",
-        "scrollLine": "491"
+        "cursorPosition": "665,56",
+        "scrollLine": "656"
     },
     "folds": "",
-    "lastKnownWriteTime": 1705353709,
+    "lastKnownWriteTime": 1705546601,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1705353709,
+    "last_content_update": 1705546601741,
     "read_only": false,
     "read_only_alternatives": []
 }

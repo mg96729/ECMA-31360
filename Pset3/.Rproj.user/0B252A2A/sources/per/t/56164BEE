@@ -1,9 +1,9 @@
 {
     "id": "56164BEE",
-    "path": "D:/GitHub/ECMA31360/Pset3/PSet3.R",
+    "path": "D:/GitHub/ECMA-31360/Pset3/PSet3.R",
     "project_path": "PSet3.R",
     "type": "r_source",
-    "hash": "3942770507",
+    "hash": "1639973806",
     "contents": "",
     "dirty": false,
     "created": 1705454471869.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "19,0",
-        "scrollLine": "0"
+        "cursorPosition": "126,0",
+        "scrollLine": "105"
     },
     "folds": "",
-    "lastKnownWriteTime": 1705457065,
+    "lastKnownWriteTime": 1705556796,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1705457065243,
+    "last_content_update": 1705556796935,
     "read_only": false,
     "read_only_alternatives": []
 }
