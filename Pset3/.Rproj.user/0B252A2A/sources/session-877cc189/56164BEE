@@ -3,7 +3,7 @@
     "path": "D:/GitHub/ECMA-31360/Pset3/PSet3.R",
     "project_path": "PSet3.R",
     "type": "r_source",
-    "hash": "1639973806",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1705454471869.0,
@@ -12,8 +12,8 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "126,0",
-        "scrollLine": "105"
+        "cursorPosition": "115,63",
+        "scrollLine": "107"
     },
     "folds": "",
     "lastKnownWriteTime": 1705556796,

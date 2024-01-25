@@ -1,0 +1,172 @@
+# Part 1
+
+## Q1
+
+In this code block, we import the data, as well as installing any necessary packages.
+
+```{r}
+source("./Functions.R")
+
+install_packages_if_needed(c("utils"))
+
+#Import the csv files
+df_cps <- data.frame(utils::read.delim(file = "nswcps.csv",
+                                    sep = ","))
+df_psid <- data.frame(utils::read.delim(file = "nswpsid.csv",
+                                    sep = ","))
+```
+
+Here we get the means for each variables in the control group of CPS
+
+```{r}
+#get mean for each variables in cps, for control only
+dplyr::group_by(df_cps, treat)%>% dplyr::summarise_all(.funs=list(mean))
+```
+
+Here we get the means for each variables in the control group of PSID
+
+```{r}
+#get mean for each variables in psid, for control only
+dplyr::group_by(df_psid, treat)%>% dplyr::summarise_all(.funs=list(mean))
+```
+
+I can't get a Latex table into R markdown file. For that please see the pdf file.
+
+# Part 2
+
+## Q3
+
+### a
+
+Here we estimate the model with only one independent variable: treat
+
+```{r}
+m1 <- stats::lm(re78 ~ treat, data = df_psid)
+summary(m1)#$coefficients["treat", c("Estimate","Std. Error")]
+
+#t-test under homoskedasticity, which is also shown in summary
+lmtest::coeftest(m1, vcov. = vcov(m1))
+```
+
+### b
+
+Here we estimate the White heteroskedastic SE
+
+```{r}
+lmtest::coeftest(m1, vcov. = car::hccm(m1, type = "hc0"))
+```
+
+## Q4
+
+### a
+
+Here we estimate the Adj. TCC estimator
+
+```{r}
+#add agesq
+df_psid <-df_psid %>% 
+  dplyr::mutate(.data=df_psid, agesq = age**2)
+
+#formula
+fo <- as.formula("re78 ~ treat + age + agesq + edu + nodegree + black + hisp + re74 + re75")
+
+#lm estimator
+m2 <- stats::lm(fo, data = df_psid)
+
+#test
+lmtest::coeftest(m2, vcov. = car::hccm(m2, type = "hc0"))
+
+```
+
+## Q5
+
+### a
+
+i.  First Stage regression: treat \~ age + agesq + edu + nodegree+ black + hisp + re74 + re75
+
+```{r}
+fo1_treat <- as.formula("treat ~ age + agesq + edu + nodegree+ black + hisp + re74 + re75")
+s1 <- stats::lm(fo1_treat, data = df_psid)
+summary(s1)
+```
+
+ii. Second Stage: re78 \~ resid(s1)
+
+```{r}
+e_treat <- s1$residuals
+m2 <- lm(re78 ~ e_treat, data = df_psid)
+lmtest::coeftest(m2, vcov. = car::hccm(m2, type = "hc0"))
+```
+
+### b 
+i and ii. re78 \~ age + agesq + edu + nodegree+ black + hisp + re74 + re75
+
+```{r}
+#i. treat ~ age + agesq + edu + nodegree+ black + hisp + re74 + re75
+fo1_treat <- as.formula("treat ~ age + agesq + edu + nodegree+ black + hisp + re74 + re75")
+s1 <- stats::lm(fo1_treat, data = df_psid)
+e_treat <- s1$residuals
+
+#ii. re78 ~ age + agesq + edu + nodegree+ black + hisp + re74 + re75
+fo1_re78 <- as.formula("re78 ~ age + agesq + edu + nodegree+ black + hisp + re74 + re75")
+s2 <- stats::lm(fo1_re78, data = df_psid)
+summary(s2)
+
+e_re78 <- s2$residuals
+```
+
+iii. e_re78 \~ e_treat
+
+```{r}
+m3 <- lm(e_re78 ~ e_treat, data = df_psid)
+lmtest::coeftest(m2, vcov. = car::hccm(m2, type = "hc0"))
+```
+
+# Q7
+## a-h
+```{r}
+#a. Here we install the packages
+install_packages_if_needed(c("DoubleML", "data.table", "mlr3", "mlr3learners", "ranger"))
+
+#b. Converting df to dt
+dt_psid <- data.table::as.data.table(df_psid)
+
+#c. OPV list: 
+pretreat_colnames <- c("age", "edu", "black", "hisp", "married", "re74", "re75", "u74", "u75", "nodegree")
+
+#d. run DML_Model
+dml_data_psid <- DoubleML::DoubleMLData$new(dt_psid,
+                            y_col = "re78",
+                            d_cols = "treat",
+                            x_cols = pretreat_colnames)
+dml_data_psid
+
+#e. Suppress Warning
+lgr::get_logger("mlr3")$set_threshold("warn")
+
+#f. "First Stage ML"
+#l(x)=E[re78|X=x]
+ml_l_rf <- mlr3::lrn("regr.ranger")
+
+#m(x)=E[treat|X=x]
+ml_m_rf <- mlr3::lrn("classif.ranger")
+
+#g. set training seed and DML
+# Set seeds for cross-fitting
+set.seed(3141)
+
+# Set the DML specification
+obj_dml_plr <- DoubleML::DoubleMLPLR$new(dml_data_psid, 
+                                         ml_l = ml_l_rf, ml_m = ml_m_rf, 
+                                         n_folds = 2,
+                                         score = "partialling out",
+                                         apply_cross_fitting = TRUE)
+
+#h. fit the DML
+obj_dml_plr$fit()
+obj_dml_plr
+
+```
+
+
+

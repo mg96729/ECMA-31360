@@ -1,0 +1,2 @@
+"0","#get mean for each variables in cps, for control only"
+"0","dplyr::group_by(df_cps, treat)%>% dplyr::summarise_all(.funs=list(mean))"

@@ -1,0 +1,26 @@
+"0","\begin{table}[]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+      & Sad                                                & Happy                                              \\ \hline
+Short & \begin{tabular}[c]{@{}l@{}}Sam\\ Beth\end{tabular} & \begin{tabular}[c]{@{}l@{}}Jim\\ Sara\end{tabular} \\ \hline
+Tall  & \begin{tabular}[c]{@{}l@{}}Erin\\ Ted\end{tabular} & \begin{tabular}[c]{@{}l@{}}Bob\\ Ava\end{tabular}  \\ \hline
+\end{tabular}
+\caption{My caption}
+\label{my-label}
+\end{table}"
+"1","This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7200 64-bit)
+"
+"1","entering extended mode
+(D:/Temp/Rtmpkftg62/chunk-code-417c2678a4d.txt
+LaTeX2e <2019-10-01>
+
+! LaTeX Error: Environment table undefined.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1 \begin{table}
+                 []
+? "

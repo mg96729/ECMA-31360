@@ -1,0 +1,2 @@
+"0","#get mean for each variables in psid, for control only"
+"0","dplyr::group_by(df_psid, treat=0)%>% dplyr::summarise_all(.funs=list(mean))"

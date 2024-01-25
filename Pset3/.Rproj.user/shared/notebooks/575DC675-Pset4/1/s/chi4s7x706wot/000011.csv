@@ -1,0 +1,124 @@
+"0","#a. Here we install the packages"
+"0","install_packages_if_needed(c(""DoubleML"", ""data.table"", ""mlr3"", ""mlr3learners"", ""ranger""))"
+"0",""
+"0","#b. Converting df to dt"
+"0","dt_psid <- data.table::as.data.table(df_psid)"
+"0",""
+"0","#c. OPV list: "
+"0","pretreat_colnames <- c(""age"", ""edu"", ""black"", ""hisp"", ""married"", ""re74"", ""re75"", ""u74"", ""u75"", ""nodegree"")"
+"0",""
+"0","#d. run DML_Model"
+"0","dml_data_psid <- DoubleML::DoubleMLData$new(dt_psid,"
+"0","                            y_col = ""re78"","
+"0","                            d_cols = ""treat"","
+"0","                            x_cols = pretreat_colnames)"
+"0","dml_data_psid"
+"1","================= DoubleMLData Object ==================
+"
+"1",""
+"1","
+"
+"1",""
+"1","
+------------------ Data summary      ------------------
+"
+"1",""
+"1","Outcome variable: re78
+Treatment variable(s): treat
+Covariates: age, edu, black, hisp, married, re74, re75, u74, u75, nodegree
+Instrument(s): 
+No. Observations: 2675
+"
+"0","#e. Suppress Warning"
+"0","lgr::get_logger(""mlr3"")$set_threshold(""warn"")"
+"0",""
+"0","#f. ""First Stage ML"""
+"0","#l(x)=E[re78|X=x]"
+"0","ml_l_rf <- mlr3::lrn(""regr.ranger"")"
+"0",""
+"0","#m(x)=E[treat|X=x]"
+"0","ml_m_rf <- mlr3::lrn(""classif.ranger"")"
+"0",""
+"0","#g. set training seed and DML"
+"0","# Set seeds for cross-fitting"
+"0","set.seed(3141)"
+"0",""
+"0","# Set the DML specification"
+"0","obj_dml_plr <- DoubleML::DoubleMLPLR$new(dml_data_psid, "
+"0","                                         ml_l = ml_l_rf, ml_m = ml_m_rf, "
+"0","                                         n_folds = 2,"
+"0","                                         score = ""partialling out"","
+"0","                                         apply_cross_fitting = TRUE)"
+"0",""
+"0","#h. fit the DML"
+"0","obj_dml_plr$fit()"
+"2","Warning: 程辑包‘mlr3’是用R版本4.2.3 来建造的"
+"0","obj_dml_plr"
+"1","================= DoubleMLPLR Object ==================
+"
+"1",""
+"1","
+"
+"1",""
+"1","
+------------------ Data summary      ------------------
+"
+"1",""
+"1","Outcome variable: re78
+Treatment variable(s): treat
+Covariates: age, edu, black, hisp, married, re74, re75, u74, u75, nodegree
+Instrument(s): 
+No. Observations: 2675
+"
+"1",""
+"1","
+------------------ Score & algorithm ------------------
+"
+"1",""
+"1","Score function: partialling out
+DML algorithm: dml2
+"
+"1",""
+"1","
+------------------ Machine learner   ------------------
+"
+"1",""
+"1","ml_l: regr.ranger
+"
+"1",""
+"1","ml_m: classif.ranger
+"
+"1",""
+"1","
+------------------ Resampling        ------------------
+"
+"1",""
+"1","No. folds: 2
+No. repeated sample splits: 1
+Apply cross-fitting: TRUE
+"
+"1",""
+"1","
+------------------ Fit summary       ------------------
+ "
+"1","Estimates and significance testing of the"
+"1"," "
+"1","effect of target variables
+"
+"1","     "
+"1"," Estimate."
+"1"," Std. Error"
+"1"," t value"
+"1"," Pr(>|t|)"
+"1","
+treat"
+"1","      -534"
+"1","       1078"
+"1","  -0.496"
+"1","     0.62"
+"1","
+"
+"1","
+"
+"1","
+"
