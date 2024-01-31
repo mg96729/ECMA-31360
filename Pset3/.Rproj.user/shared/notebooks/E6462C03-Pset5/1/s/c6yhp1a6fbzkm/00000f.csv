@@ -1,0 +1,5 @@
+"0","dt_psid <-dt_psid %>% "
+"0","  dplyr::mutate(.data=dt_psid, "
+"0","                p_logit = p_logit)"
+"0",""
+"0","write.csv(dt_psid,""nswpsid_logit.csv"", row.names = FALSE)"

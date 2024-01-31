@@ -1,0 +1,272 @@
+---
+title: "Pset5"
+output: html_document
+date: "2024-01-30"
+---
+
+In this code block, we import the data, as well as installing any necessary packages.
+
+```{r}
+source("./Functions.R")
+
+install_packages_if_needed(c("utils"))
+
+#Import the csv files
+dt_psid <- data.table::as.data.table(utils::read.delim(file = "nswpsid.csv",
+                                    sep = ","))
+```
+
+# Q1
+
+$p_i = E[D_i|x_i]=Pr[D_i=1|x_i]=\sum_m \theta_m 1_{\{x_i=m\}}$ So what is $\theta_m$? $Pr[D_i=1|x_i=m]$ of course!
+
+Now what is a good estimator of $\theta_m$? I propose the simple bin estimator:
+
+$\hat{\theta}_m = \sum_i D_i 1_{\{x_i=m\}}/\sum_i 1_{\{x_i=m\}}$.
+
+This is a consistent and unbiased estimator of $\theta_m$, by law of large numbers
+
+In words: it is the number of treated individuals with m years of schooling, divided by the total number of individuals with m years of schooling. This estimator has a problem though: if the sample does not include certain years of schooling, then the estimator cannot tell us anything about $Pr[D_i=1|x_i=m]$ for those m's.
+
+Hence we get our estimator for $\hat{p}_i$:
+
+$\hat{p}_i = \sum_m \hat{\theta}_m 1_{\{x_i=m\}}$
+
+# Q2 a
+
+```{r}
+#mutate the data table to add additional variables:
+dt_psid <-dt_psid %>% 
+  dplyr::mutate(.data=dt_psid, 
+                agesq = age**2,
+                edusq = edu**2,
+                re74sq = re74**2,
+                re75sq = re75**2,
+                u74black = u74*black)
+
+
+#Write the formula:
+pscore_formula <- as.formula("treat ~ age + agesq +edu + edusq + married + nodegree + black + hisp + re74 + re75 + re74sq + re75sq + u74black")
+
+#OLS estimator for theta
+lpm <- stats::lm(pscore_formula, data = dt_psid)
+
+#This will be our theta_hat, for LPM
+lpm$coefficients
+```
+
+# Q2 b
+
+## i
+
+Since in LPM, we assume that $Pr[D_i = 1|x_i=x] = x'\theta = x_i'\theta$ (since given $x_i = x$. This really is for readability), we take the derivative with respect to $x_{i,k}$ to see how much change in $x_{i,k}$ would impact $p$:
+
+```{=tex}
+\begin{align}
+\frac{\partial{x'\theta}}{\partial{x_{i,k}}} &= \frac{\partial}{\partial{x_{i,k}}}\sum_k x_{i,k} \theta_k \\
+                                             &= \theta_k
+\end{align}
+```
+## ii
+
+In this case, change in re75 actually changes 2 variables: re75 and re75sq:
+
+$\frac{\partial{x'\theta}}{\partial{re75}}= \theta_{re75} + 2\theta_{re75sq} re75$
+
+Using our estimated values, the equation would be: $\frac{\partial{\hat{p}}}{\partial{re75}}= -2.5232e(-6) + 4.30497e(-11) re75$
+
+## iii
+
+First, what is the mean for re75?
+
+```{r}
+mean(dt_psid$re75)
+```
+
+Now we plug this number into our estimated equation:
+
+```{r}
+lpm$coefficients["re75"]+2*lpm$coefficients["re75sq"]*mean(dt_psid$re75)
+```
+
+But we are not quite there yet. This really represents the change in $\hat{p}$ associated with *1* dollar change in re75 around the mean. To get the change in $\hat{p}$ due to \$10000 change around the mean, we need to multiply this value by 10000.
+
+So we may say: "Evaluated at average 1975 earnings, a \$10,000 increase in 1975 earnings is associated with 1.75 percentage points lower probability of being included in the treated group."
+
+(we can re-integrate the problem to get a more precise value, but linearizing a rather flat quadratic equation seems alright)
+
+# Q2 c
+
+```{r}
+p_hat = stats::predict(lpm)
+summary(p_hat)
+```
+
+# Q2 d
+
+```{r}
+dt_psid <-dt_psid %>% 
+  dplyr::mutate(.data=dt_psid, 
+                p_lpm = p_hat)
+#this works?! This is magical!!!
+```
+
+# Q2 e
+
+We see from summary of p_hat that 0 of the predicted value is above 1 (max = 0.86) BUT: we do have negative values:
+
+```{r}
+nrow(dt_psid[dt_psid$p_lpm<0,])
+```
+
+1076 of the p_hat is negative, under LPM. This is not looking good.
+
+# Q3 a
+
+Now we implement the lasso regression:
+
+```{r}
+install_packages_if_needed(c('glmnet'))
+# Estimate the pscore using Lasso
+# Predictor variables
+x <- stats::model.matrix(pscore_formula, data = dt_psid)[,-1] 
+# Outcome variable
+y <- dt_psid$treat 
+# Find the best lambda using cross-validation
+set.seed(123) 
+cv_lasso <- glmnet::cv.glmnet(x, y, alpha = 1)
+# Display the best lambda value
+cv_lasso$lambda.min
+# Apply Lasso
+lasso_propensity <- glmnet::glmnet(x = x, y = y, alpha = 1,  
+                                   standardize = TRUE, 
+                                   lambda = cv_lasso$lambda.min)
+#Display Lasso
+summary(lasso_propensity)
+```
+
+# Q3 b
+
+Now we compare OLS estimated coefficients and Lasso estimated coefficients:
+
+```{r}
+#Coefficients estimated by lasso
+coefficients(lasso_propensity)
+
+#Coefficients estimated by OLS
+coefficients(lpm)
+```
+
+Note that by Lasso, the coefficients on agesq is estimated to be 0, while in OLS it is estimated to be 2.161565e-05.
+
+In general Lasso estimated coefficients seems to be smaller than OLS estimated coefficients.
+
+# Part 2 Q4
+
+By definition, the likelihood function of this example is: 
+```{=tex}
+\begin{equation}
+\mathcal{L}(\gamma; \tilde{D})= \prod_{i=1}^{N}\Pr(D_i=\tilde{D}_i| \gamma)
+\end{equation}
+```
+But what is $\Pr(D_i=\tilde{D}_i|; \gamma)$ in terms of $\gamma$ here? Since we are dealing with Bernoulli distribution, we may set $\gamma = \Pr(D_i = 1)$, and $1-\gamma = \Pr(D_i=0)$. In term:
+```{=tex}
+\begin{equation} 
+  \Pr(D_i = \tilde{D}_i | \gamma) = \gamma^{\tilde{D}_i} (1-\gamma)^{1-\tilde{D}_i} 
+\end{equation}
+```
+Hence our likelihood function is:
+```{=tex}
+\begin{equation}
+  \mathcal{L}(\gamma; \tilde{D})= \prod_{i=1}^{N}\gamma^{\tilde{D}_i} (1-\gamma)^{1-\tilde{D}_i}
+\end{equation}
+```
+Now we get the log likelihood function:
+```{=tex}
+\begin{equation}
+  \ell(\gamma; \tilde{D})= \sum_{i=1}^{N}\tilde{D}_i ln(\gamma) + (1-\tilde{D}_i)ln(1-\gamma)
+\end{equation}
+```
+FOC:
+```{=tex}
+\begin{align}
+  \frac{\partial}{\partial{\gamma}}\ell(\gamma; \tilde{D}) &= 
+    \sum_{i=1}^{N}
+      \frac{\tilde{D}_i}{\gamma} - \frac{1-\tilde{D}_i}{1-\gamma} \\
+      &= \sum_{i=1}^{N}
+        \frac{\tilde{D}_i-\gamma}{\gamma (1-\gamma)} \\
+      &= \frac{1}{\gamma(1-\gamma)}(N\times \gamma -\sum_{i=1}^{N}D_i)
+\end{align}
+```
+Which is equal to zero when $\gamma = \frac{\sum_i D_i}{N}$. In our case, this would be 0.1
+
+# Q5 a
+Here we estimate the gamma's:
+
+```{r}
+mle <- stats::glm(pscore_formula, family = binomial( ), data = dt_psid)
+summary(mle) #Interesting. It seems MLE is better at fitting the model to OPV (no surprise actually since MLE is biased to fit best).
+```
+# Q5 b
+## i
+First, we know that:
+```{=tex}
+\begin{align}
+  \frac{\partial}{\partial x_{i,k}} e^{\mathbf{x}'\gamma} &= \frac{\partial}{\partial x_{i,k}} \prod_{j=1}^{K} e^{\gamma_j x_{i,j}} \\
+  &= \gamma_k e^{\mathbf{x}'\gamma}
+\end{align}
+```
+Hence:
+```{=tex}
+\begin{align}
+  \frac{\partial}{\partial x_{i,k}}(\frac{e^{\mathbf{x}'\gamma}}{1+ e^{\mathbf{x}'\gamma}})
+  &= \frac{\gamma_k e^{\mathbf{x}'\gamma} (1+e^{\mathbf{x}'\gamma})-\gamma_k e^{\mathbf{x}'\gamma}e^{\mathbf{x}'\gamma}}{(1+ e^{\mathbf{x}'\gamma})^2} \\
+  &=\gamma_k \frac{e^{\mathbf{x}'\gamma}}{(1+e^{\mathbf{x}'\gamma})^2}
+\end{align}
+```
+
+## ii
+We can generalize this problem to finding $\frac{e^f(x)}{1+e^f(x)}$:
+```{=tex}
+\begin{align}
+  \frac{\partial}{\partial{x}}(\frac{e^f(x)}{1+e^f(x)}) &= \frac{f'(x) e^{f(x)} (1+e^{f(x)}) - e^{f(x)} f'(x) e^{f(x)}}{(1+e^{f(x)})^2} \\
+  &= f'(x) \frac{e^{f(x)}}{(1+e^{f(x)})^2}
+\end{align}
+```
+
+It follows then that:
+```{=tex}
+\begin{align}
+  \frac{\partial}{\partial{re75}} (\frac{e^{x'\gamma}}{1+e^{x'\gamma}}) 
+  &= (\gamma_{re75}+2 \gamma_{re75sq} re75) \frac{e^{x'\gamma}}{(1+e^{x'\gamma})^2}
+\end{align}
+```
+
+# Q6
+Now we use MLE to predict the p score:
+
+```{r}
+p_logit <- stats::predict(mle, type = "response")
+summary(p_logit)
+```
+# Q7
+Mutating ...
+```{r}
+dt_psid <-dt_psid %>% 
+  dplyr::mutate(.data=dt_psid, 
+                p_logit = p_logit)
+
+#Store for future use
+write.csv(dt_psid,"nswpsid_logit.csv", row.names = FALSE)
+```
+
+# Q8
+Why is Logit score always between 0 and 1? Consider the limits:
+
+```{=tex}
+\begin{align}
+    \lim_{\mathbf{x}' \gamma \rightarrow \infty} \frac{e^{\mathbf{x}' \gamma}}{1+ e^{\mathbf{x}'\gamma}} &=  \lim_{\mathbf{x}' \gamma \rightarrow \infty} \frac{e^{\mathbf{x}' \gamma}}{e^{\mathbf{x}'\gamma}} =1 \; \text{(by l'H$\hat{o}$pital)} \\
+    \lim_{\mathbf{x}' \gamma \rightarrow -\infty} \frac{e^{\mathbf{x}' \gamma}}{1+ e^{\mathbf{x}'\gamma}} &= 0
+\end{align}
+```
+And this function is increasing in $\mathbf{x}'\gamma$, as $\frac{\partial}{\partial x} \frac{e^x}{1+e^x} =\frac{e^x}{(1+e^x)^2}\geq 0$ for all x. 

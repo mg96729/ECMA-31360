@@ -1,0 +1,4 @@
+"0","dt_psid <-dt_psid %>% "
+"0","  dplyr::mutate(.data=dt_psid, "
+"0","                p_lpm = p_hat)"
+"0","#this works?! This is magical!!!"
