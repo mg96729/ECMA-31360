@@ -1,0 +1,8 @@
+"0",""
+"0","#Now find the common support in treat and control groups:"
+"0","upper_p <- min(by(data = dt_psid$p_logit, INDICES = dt_psid$treat, FUN = max))"
+"0","lower_p <- max(by(data = dt_psid$p_logit, INDICES = dt_psid$treat, FUN = min))"
+"0",""
+"0","#Now we trim the data set using these bounds:"
+"0","psid_trimmed <- dplyr::filter(.data = dt_psid, p_logit >= lower_p & p_logit <= upper_p)"
+"0",""

@@ -1,0 +1,8 @@
+"0","source(""./Functions.R"")"
+"0",""
+"0","install_packages_if_needed(c(""utils""))"
+"0","library(tidyr)"
+"0",""
+"0","#Import the csv files"
+"0","dt_psid <- data.table::as.data.table(utils::read.delim(file = ""nswpsid.csv"","
+"0","                                    sep = "",""))"

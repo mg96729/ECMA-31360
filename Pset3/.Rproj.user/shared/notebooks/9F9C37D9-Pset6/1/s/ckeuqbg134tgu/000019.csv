@@ -1,0 +1,4 @@
+"0","#This gives the summary of the p-scores of the control and treatment groups:"
+"0","dt_psid %>%"
+"0","    dplyr::group_by(treat) %>%"
+"0","    dplyr::summarise_at(.var=c('p_logit'), .funs = c(max = max, min=min))"

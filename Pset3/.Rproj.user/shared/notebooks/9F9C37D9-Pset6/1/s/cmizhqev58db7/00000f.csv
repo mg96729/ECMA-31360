@@ -1,0 +1,6 @@
+"0","d <- mapply('-', dt_pairing$y_treated, dt_pairing$y_control, SIMPLIFY = FALSE)"
+"0","sum(unlist(d)*dt_pairing$weight)/nrow(psid_trimmed[psid_trimmed$treat ==1])"
+"1","[1]"
+"1"," 490.3947"
+"1","
+"

@@ -1,0 +1,4 @@
+"0",""
+"0","# Save plot object to PDF file"
+"0","# ggplot2::ggsave(filename_plot_2, plot = p)"
+"0","# the save function is not working: it says cannot find target with the name ""filename_plot_2"""

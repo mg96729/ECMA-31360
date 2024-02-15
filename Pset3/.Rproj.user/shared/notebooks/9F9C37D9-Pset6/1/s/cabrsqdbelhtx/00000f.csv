@@ -1,0 +1,5 @@
+"0","length(unique(dt_pairing$index_control))/nrow(psid_trimmed[psid_trimmed$treat == 0, ])"
+"1","[1]"
+"1"," 0.4668412"
+"1","
+"

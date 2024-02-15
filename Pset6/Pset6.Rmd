@@ -1,0 +1,423 @@
+---
+title: "Pset6"
+output: html_document
+date: "2024-02-14"
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+In this code block, we import the data, as well as installing any necessary packages.
+
+```{r}
+source("./Functions.R")
+
+install_packages_if_needed(c("utils"))
+library(tidyr)
+
+#Import the csv files
+dt_psid <- data.table::as.data.table(utils::read.delim(file = "nswpsid.csv",
+                                    sep = ","))
+```
+
+First, we need the Logit-based P-Score, based on the formula in PSet 5:
+
+```{r}
+#mutate the data table to add additional variables:
+dt_psid <-dt_psid %>% 
+  dplyr::mutate(.data=dt_psid, 
+                agesq = age**2,
+                edusq = edu**2,
+                re74sq = re74**2,
+                re75sq = re75**2,
+                u74black = u74*black)
+
+
+#Write the formula (as in Pset 5):
+pscore_formula <- as.formula("treat ~ age + agesq +edu + edusq + married + nodegree + black + hisp + re74 + re75 + re74sq + re75sq + u74black")
+
+#mle estimation
+mle <- stats::glm(pscore_formula, family = binomial( ), data = dt_psid)
+
+#prediction
+p_logit <- stats::predict(mle, type = "response")
+
+#Store in dt
+dt_psid <-dt_psid %>% 
+  dplyr::mutate(.data=dt_psid, 
+                p_logit = p_logit)
+
+summary(p_logit)
+
+```
+
+# Q1
+
+```{r}
+#This gives the summary of the p-scores of the control and treatment groups:
+dt_psid %>%
+    dplyr::group_by(treat) %>%
+    dplyr::summarise_at(.var=c('p_logit'), .funs = c(max = max, min=min))
+
+#Now find the common support in treat and control groups:
+upper_p <- min(by(data = dt_psid$p_logit, INDICES = dt_psid$treat, FUN = max))
+lower_p <- max(by(data = dt_psid$p_logit, INDICES = dt_psid$treat, FUN = min))
+
+#Now we trim the data set using these bounds:
+psid_trimmed <- dplyr::filter(.data = dt_psid, p_logit >= lower_p & p_logit <= upper_p)
+
+```
+
+Q2 a.
+This is from the problem set:
+
+```{r}
+# Draw scatter plot of post-intervention earnings and the Logit-based pscore, by group;
+# overlay smooth local regression line.
+plot_df <- psid_trimmed %>%
+  dplyr::filter(re78 < 20000) %>% # drop outliers for plotting purposes
+  dplyr::mutate(treat = factor(ifelse(treat == 1, "Treated", "Control"))) #labels?
+p <- ggplot2::ggplot(plot_df, ggplot2::aes(x = p_logit, y = re78)) +
+  ggplot2::facet_grid(~treat) + #plot 2 graphs for treat and control
+  ggplot2::geom_point() + #scatterplot
+  ggplot2::scale_y_continuous(breaks=seq(0,20000,by=1000)) + #?
+  ggplot2::geom_smooth(method = "loess", formula = y ~ x, span = 2, 
+                                        method.args = list(degree = 1)) + 
+  #what is span of 0.5? is it of x?
+  ggplot2::ylab("Real Earnings in 1978") +
+  ggplot2::xlab("Estimated Propensity Score") +
+  ggplot2::labs(caption = "Data Source: NSW-PSID1.") + ggplot2::theme_bw()
+
+p
+
+# Save plot object to PDF file
+# ggplot2::ggsave(filename_plot_2, plot = p)
+# the save function is not working: it says cannot find target with the name "filename_plot_2"
+```
+
+In this changed code, I set the span to "2".
+I think the span means diameter of the neighborhood around a chosen point.
+So intuitively, setting span to 2 should regress all the points in each groups, i.e. linear regression.
+
+Indeed the fitted curve is a line.
+
+But question: what are the chosen points?
+How are they chosen?
+Are every point chosen and then each "small" regression lines are "stitched" together?
+
+Q2 b The graphs (and regression lines) can give us a very good feeling of CATE for a given p-score.
+ATE, which is the integral of CATE based on the distribution of p_score?
+Maybe not so much.
+
+However, I guess that it seem that the entire data set is so "clumped up" around $\hat{p}=0$ (since there are a lot more untreated than treated in the sample) that CATE for $\hat{p}=0$ should be pretty telling of ATE.
+
+CATE: $\hat{E}[y_{1i}-y_{0i}|p=0] \approx -2000$.
+Hmmmm, this doesn't feel right...
+
+Q3 a The following code initializes a variable called stratum, using the bincode function
+
+```{r}
+#First, set the bin bounds
+b <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1) 
+  
+# Calling .bincode() function 
+psid_trimmed <- psid_trimmed %>%
+  dplyr::mutate(.data = psid_trimmed, 
+                stratum = .bincode(p_logit, b, TRUE, TRUE))
+
+# Now we gives a summary, grouped by variable stratum:
+psid_trimmed %>%
+    dplyr::group_by(stratum) %>%
+    dplyr::summarize(
+      'count of treated units' = sum(treat == 1),
+      'count of control units' = sum(treat == 0),
+      'max p-score' = max(p_logit),
+      'min p-score' = min(p_logit)
+    )
+```
+
+Q3 b.
+We now try to test CIA:
+
+```{r}
+# Declare a function that identifies perfectly collinear covariates.
+# Note: this fnc is roughly equivalent to _rmcoll in STATA.
+rmcoll <- function(df, colnames = names(df)) {
+  # Arguments:
+  # - df: A data frame.
+  # - colnames: A list of column names.
+  # Returns:
+  # A list with the column names of collinear variables.
+ 	df_ <- df %>% dplyr::select(one_of(colnames))
+ 	cc <- coef(lm(rep(1, nrow(df_)) ~ ., data = df_))
+  	return(names(cc)[is.na(cc)])
+} # end fnc rmcoll
+
+#listing OPVs
+list_OPVs <- c('age', 'edu', 'married', 'black', 'hisp', 're74', 're75', 'u74black')
+
+#Now for each strata 1-10:
+for(s in 1:10){
+  #set df to this stratum
+  df <- psid_trimmed[psid_trimmed$stratum == s]
+  #if treated AND control counts positive:
+  if(nrow(df[df$treat==1]) >0
+     & nrow(df[df$treat==0])>0
+  ){
+    #get rid of colinear terms
+    to_die <- rmcoll(df = df)
+    list_survivors <- list_OPVs[!(list_OPVs %in% to_die)]
+    #Now get formulas for SUR
+    list_fo = list()
+    for (x in list_survivors){
+      xname = toString(x)
+      fo <- as.formula(paste(xname, "~treat"))
+      list_fo <- append(list_fo, fo)
+    }
+    #Now use SUR estimation on this list of formulas
+    sur_fit <- systemfit::systemfit(formula = list_fo, data=df, method="SUR")
+    #Print summary
+    print(paste('stratum:', s))
+    print(summary(sur_fit)$coefficients)
+    rm(sur_fit)
+  }
+}
+
+```
+
+We have now tested balance in non-colinear OPV's in each of the strata.
+
+Why is this a good idea?
+Even if OPV's are balanced across treated and control groups in the larger sample, we have now subdivided the sample based on p-scores.
+This means that now each bins are an even smaller samples.
+Even if our strata are assigned randomly, the probability of OPVs not balanced just by random chance increases.
+We even see that some strata do not even have any controls/treated individuals in them.
+
+As for findings, it seems that in each strata, the coefficients on the treatments do not generally have low p-values.
+This suggests that in general, the OPVs are balanced across treatment and control groups in each strata.
+
+# Q3 c
+
+We implement the Stratification Matching Estimator of ATT here
+
+```{r}
+#First, we assign the weights and difference in CATT (?) in one loop
+w = list()
+d = list()
+for(s in 1:10){
+  #set df to this stratum
+  df <- psid_trimmed[psid_trimmed$stratum == s]
+  #if treated AND control counts positive:
+  if(nrow(df[df$treat==1]) >0
+     & nrow(df[df$treat==0])>0
+  ){
+    #num of treated in each strata 
+    n <- nrow(df[df$treat == 1])
+    w <- c(w, n)
+    
+    #Find avg treatment effect in stratum
+    avg_t <- mean(df[df$treat == 1]$re78)
+    avg_c <- mean(df[df$treat == 0]$re78)
+    diff <- avg_t-avg_c
+    d <- append(d, c(diff))
+  }
+}
+
+#make appended list "normal"
+d <- unlist(d)
+w <- unlist(w)
+
+#normalize weight
+w <- w/sum(w)
+
+
+#Now for the estimator:
+att <- weighted.mean(d, w)
+att
+
+
+
+```
+
+Indeed, we get (approximately) the right amount!
+
+Now why is this the estimator of ATT?
+We know that for the treated individuals, their realized potential outcome is their incomes in '78 after receiving treatment.
+But how do we know about their incomes in a world in which they never got the treatment?
+We need an estimator for that.
+
+Our estimator is the average income of people similar to the treatment (by pre-treatment OPVs), but who did not receive the treatment, i.e. the control group in each strata.
+We defined "similar" by strata of p-score.
+Since each strata features people with "close enough" p-scores, we think that they should be similar in terms of pre-treatment OPVs.
+
+But how is it that avg.
+income of the control individuals in each strata is a "reasonable" estimator of the avg.
+income of the treated individuals had they not received treatment?
+We have shown in Q3 that within each stratum, whether an individual received treatment does not predict any of the pre-treatment OPVs.
+This suggests that within each stratum, treatment assignment is unlikely to be correlated with the outcomes of individuals if everyone is untreated.
+Hence, the avg.
+income of the control individuals is an unbiased estimator of avg.
+income of treated individuals had they not been treated.
+
+Using this estimator, and the treated count weights of each strata as estimator for the probability distribution of treated individuals across different p-scores, we now have an estimator for avg.
+treatment effect on the treated, ATT.
+
+# Part ii
+
+## Q4
+
+What does unconditional RA do to p-score of individuals with any x, vector of realized OPVs?
+It sets them the same:
+
+```{=tex}
+\begin{align}
+    \forall x,\, x' \in X \; \hat{p}(x) \equiv Pr[D=1|x] = \hat{p}(x')
+\end{align}
+```
+(D is treatment assignment, as in class).
+Let this constant p-score be $p$.
+
+Now if p-scores across x are all the same, what does that mean for the 3 different kinds of matching correspondence?
+They yield the same result: What does unconditional RA do to p-score of individuals with any x, vector of realized OPVs?
+It sets them the same:
+
+```{=tex}
+\begin{align}
+    \foralli \; C^{NNM}(i) = C^{RM}(i) = C^{KM}(i) = C 
+\end{align}
+```
+Since everyone has the same p-score, they are all nearest neighbors and within radius $r>0$ of each other. 
+
+It also follows that the weight functions are the same. Cares need to be taken for KM weights though:
+```{=tex}
+\begin{align}
+  \forall i, j \; & K(\frac{\hat{p}_i-\hat{p_j}}{h}) = K(0) \\
+  \Rightarrow  & w_{ij} = K(0)/ \sum_{C} K(0) = 1/N^C 
+\end{align}
+```
+
+This means that the estimators from NNM, RM, and KM are the same:
+```{=tex}
+\begin{align}
+  \widehat{ATT}^{m} &= \frac{1}{N^{T}} \sum_{i \in T}\left[ y_{i} -\sum_{j \in C(i)} \frac{1}{N^C} y_{j}\right] \text{, } \forall m \in \left\{ NNM,RM,KM\right\} \\
+  &= \frac{1}{N^T} \sum_{i \in T} y_i - \frac{1}{N^T}\sum_{i \in T} \overline{y}^0 \\
+  &= \overline{y}^1 - \overline{y}^0 \\
+\end{align}
+```
+
+## Q5
+```{=tex}
+\begin{align}
+  \widehat{ATT}^{m} &= \frac{1}{N^{T}} \sum_{i \in T}\left[ y_{i}-\sum_{j \in C^{m} \left( i \right) } w_{ij}^{m} y_{j}\right] \text{, }m \in \left\{ NNM,RM,KM\right\} \\
+  &= \frac{1}{N^T} \sum_{i \in T} y_{i} 
+  - \frac{1}{N^T} \sum_{i \in T} \sum_{j \in C} w_{ij} y_j \\
+  &= \overline{y}^1 - \frac{1}{N^C} \sum_{j \in C} ( \frac{N^C}{N^T} \sum_{i \in T}w_{ij} )y_j  
+\end{align}
+```
+
+Hence $\pi_j = \frac{N^T}{N^C}\sum_{i\in T}w_{ij}$.
+
+## Q6
+We now present the 1-1 NMM estimator of ATT:
+```{r}
+X <- psid_trimmed$p_logit
+Tr<- psid_trimmed$treat
+Y <- psid_trimmed$re78
+
+install_packages_if_needed(c("Matching"))
+
+rr  <- Matching::Match(Y=Y, Tr=Tr, X=X, M=1, estimand='ATT');
+
+summary(rr)
+
+```
+This doesn't instill confidence. Why is it so different to Naive estimate?
+
+## Q7
+First, we create the data frame to store the pairings and related info:
+```{r}
+dt_pairing <- data.table::data.table(
+  index_treated = rr$index.treated,
+  index_control = rr$index.control,
+  p_treated = psid_trimmed[rr$index.treated]$p_logit,
+  p_control = psid_trimmed[rr$index.control]$p_logit,
+  y_treated = psid_trimmed[rr$index.treated]$re78,
+  y_control = psid_trimmed[rr$index.control]$re78,
+  weight = rr$weights
+)
+# dt_pairing <-dt_pairing %>% 
+#   dplyr::mutate(.data=dt_pairing, 
+#                 
+#                 )
+```
+### a
+We count the number of unique treated indices in dt_pairing:
+```{r}
+length(unique(dt_pairing$index_treated))
+```
+There are 179 treated individuals paired (i.e. all of the treated).
+
+### b
+Here we count the pairs with weight 1:
+```{r}
+nrow(dt_pairing[dt_pairing$weight == 1])
+```
+There are 151 treated individuals paired with exactly 1 control unit.
+
+### c
+Here we find the percentage of unique control units to the total number of control units:
+```{r}
+length(unique(dt_pairing$index_control))/nrow(psid_trimmed[psid_trimmed$treat == 0, ])
+```
+Only 46.7 percent of control units are paired.
+
+### d & e
+```{r}
+length(unique(dt_pairing[dt_pairing$weight == 1]$index_control))
+```
+
+Only 34 distinct control units are used to pair up with the 151 treated units with only one pairing.
+
+What is going on? This also serves as answer to (e):
+Since we see in the scatter plot that control and treatment groups are very clustered in p-score, when we need to find their closest neighbors, we would often land on the rare instances of either case.
+
+For an analogy, since we are in the world of 1-to-1 pairing: dating scene! There are a lot more boys in the Math department than girls, so when you ask boys who he likes the most (the "pairings"), their answers can only be so varied. On the flip side, the gender imbalance is reversed in the Art department, so the opposite happens. 
+
+This problem would not be as egregious if the control and treatment groups are both evenly distributed in p-score, but by definition of p-score (conditional probability of assignment given x) and MLE, that is not gonna happen, is it?
+
+### f
+Is this just the number of matchings? Which is $\sum_{i}N^C_i$?
+
+### g
+```{r}
+d <- mapply('-', dt_pairing$y_treated, dt_pairing$y_control, SIMPLIFY = FALSE)
+sum(unlist(d)*dt_pairing$weight)/nrow(psid_trimmed[psid_trimmed$treat ==1])
+```
+We get the right answer by hand.
+
+### h
+```{r}
+rr2  <- Matching::Match(Y=Y, Tr=Tr, X=X, M=1, estimand='ATT', ties = FALSE);
+
+summary(rr2)
+```
+In this case, we implement a tie breaker in finding matches. Hence, each treatment unit only has one control unit matched with it.
+
+Does this improve NNM performance? I don't know. It doesn't seem to be the case.
+
+## Q8
+Here we find the balance object:
+```{r}
+nnm_balance <- Matching::MatchBalance(treat~age + edu + black +
+                    hisp + married + nodegree + re74 + re75 + 
+                    u74 + u75, data=psid_trimmed, match.out=rr, nboots=500)
+```
+It gave some sort of warning on p-score (?)
+
+
+The covariates seem to be more balanced after matching: the differences between avg. in control and in treatment all shrinks. But how de we evaluate the performance of matching estimator in balancing the sample vs, say naive stratification? Comparing the p-value for age prediction, for instance. It seems that naive stratification has higher p-value in each strata than the matching differences. I am not sure if this is evidence enough, but I suspect that matching may perform worse by pairing up distant units while stratification would not (instead having 0 control/treatment in some strata, a different kind of imbalance).
+
+## Q9 
+What are the takeaways? Perhaps most outstanding issue is the divergence in estimates using different matching estimators. Mechanically, different matching estimator would lead to diverging results depending on the distributions of p-scores within treatment and control groups. So care should be taken to examine what the distributions of p-scores look like, and what estimators would face troubles with it.
+
+A second issue is trimming the sample. Our common support is very generous in this case: the lower bound is very close to 0, and the upper bound very close to 1. While it trimmed about half of the original sample, matching estimator shows us that there is still a lot of clustering around 0 and 1 in p-score based on treatment status. Hence we may consider more aggressive trimming methods. Although this may push samples to be too small, weakening explanatory and predictive power of our results.  
