@@ -1,0 +1,4 @@
+"0","fo4_twfe <- as.formula(""earns ~ treat"")"
+"0","twfe <- stats::plm(formula = fo4_twfe, data = dt_long, effect = 'twoways', model = 'within')"
+"2","错误: 'plm' is not an exported object from 'namespace:stats'
+"

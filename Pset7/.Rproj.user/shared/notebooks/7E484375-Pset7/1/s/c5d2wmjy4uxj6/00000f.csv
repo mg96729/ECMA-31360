@@ -1,0 +1,5 @@
+"0","mean(dt_treat[dt_treat$dyear2==1,]$earns)-mean(dt_treat[dt_treat$dyear2==0,]$earns)"
+"1","[1]"
+"1"," 4817.09"
+"1","
+"

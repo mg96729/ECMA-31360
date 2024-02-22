@@ -1,0 +1,28 @@
+{
+    "id": "4D42CA64",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1708580928406.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "id": "e265dc85ba154838937628d91b7817a3",
+        "name": "ttest1",
+        "title": "ttest1",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1708577312,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1708580928406,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,5 @@
+"0","# lm_fte <- lm(formula = fte ~ state, data = dt_ff)"
+"0","# summary(lm_fte)"
+"0",""
+"0","ttest1 <- t.test(formula = fte ~ state, data = dt_ff)"
+"0","ttest2 <- t.test(formula = fte2 ~ state, data = dt_ff)"

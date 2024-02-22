@@ -1,0 +1,2 @@
+"0","fo4 <- as.formula(""earns ~ treat + as.factor(id) + as.factor(dyear2)"")"
+"0","lsdv <- stats::lm(formula = fo4, data = dt_long)"

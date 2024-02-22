@@ -1,0 +1,33 @@
+"0","source(""./Functions.R"")"
+"0",""
+"0","install_packages_if_needed(c(""utils"", 'tidyr','pdata', 'plm'))"
+"2","WARNING: Rtools is required to build R packages but is not currently installed. Please download and install the appropriate version of Rtools before proceeding:
+
+https://cran.rstudio.com/bin/windows/Rtools/
+"
+"2","将程序包安装入‘C:/Users/联想/AppData/Local/R/win-library/4.2’
+(因为‘lib’没有被指定)
+"
+"1","Warning in "
+"1",""
+"1","install.packages"
+"1",""
+"1"," :
+  "
+"1",""
+"1","package ‘pdata’ is not available for this version of R
+
+A version of this package for your version of R might be available elsewhere,
+see the ideas at
+https://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages"
+"1",""
+"1","
+"
+"0","library(tidyr)"
+"0",""
+"0","#Import the csv files"
+"0","dt_psid <- data.table::as.data.table(utils::read.delim(file = ""nswpsid.csv"","
+"0","                                    sep = "",""))"
+"0",""
+"0","#for future use, we add an variable, id, to dt_psid:"
+"0","dt_psid <- dt_psid %>% dplyr::mutate(.data = dt_psid, id = dplyr::row_number())"

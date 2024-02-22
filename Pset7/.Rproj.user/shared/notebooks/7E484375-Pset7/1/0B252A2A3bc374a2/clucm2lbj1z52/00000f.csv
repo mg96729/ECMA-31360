@@ -1,0 +1,2 @@
+"0","pdata <- plm::pdata.frame(dt_long, index = c('id', 'dyear2'))"
+"0","twfe <- plm::plm(formula = earns ~ tdyear2, data = pdata, model = 'within', effect = 'twoways')"

@@ -1,0 +1,6 @@
+"0","#Import the csv files"
+"0","dt_psid <- data.table::as.data.table(utils::read.delim(file = ""nswpsid.csv"","
+"0","                                    sep = "",""))"
+"0",""
+"0","#for future use, we add an variable, id, to dt_psid:"
+"0","dt_psid <- dt_psid %>% dplyr::mutate(.data = dt_psid, id = dplyr::row_number())"

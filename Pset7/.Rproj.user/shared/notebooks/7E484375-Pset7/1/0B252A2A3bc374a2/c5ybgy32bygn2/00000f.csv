@@ -1,0 +1,14 @@
+"0","twfe$coefficients[1]"
+"1"," tdyear2 "
+"1","
+"
+"1","2326.505 "
+"1","
+"
+"2","Warning message:
+"
+"2","In is.recursive(.$object) && !is.primitive(.$object) && n > 0 :"
+"2","
+ "
+"2"," 'length(x) = 2 > 1' in coercion to 'logical(1)'
+"

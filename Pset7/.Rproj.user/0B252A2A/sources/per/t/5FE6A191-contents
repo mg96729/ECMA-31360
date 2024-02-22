@@ -1,0 +1,684 @@
+################################################################################
+# File name: Tutorial.R
+# Objective: Introduction to R for UChicago students
+# Last Updated: 1/6/2024
+# Author: mtartari@uchicago.edu
+# Outline:
+# I.    Get started
+# II.   Intro to data types 
+# III.  Intro to data structures
+# IV.   Create functions and call source code 
+# V.    Install and load/attach packaged
+# VI.   Generate data via drawing pseudo random numbers. Draw basic plots
+# VII.  Explore package data.table
+# VIII. Explore package dplyr
+# IX.   Export and import data
+# X.    Loops
+# XI.   Send R output to file
+# XII.  Explore functions for linear regression
+################################################################################
+
+################################################################################
+# I. Get Started     
+################################################################################
+
+# Look up the version of R installed
+sessionInfo()$R.version$version.string
+
+# Print to stout the current working directory 
+getwd()
+
+# Set the working directory
+course_directory <- "D:/ECMA 31360/R Files"
+setwd(course_directory)
+
+# Create a sub-directory 
+dir.create("./Testing")
+
+# Print to stout the files/folder in the wkg directory
+dir() # argument defaults to wkg directory
+dir(getwd()) # same output
+
+# Set the working directory
+setwd("./Testing") # or use full path
+
+# Use ".." to go up one level in directory hierarchy 
+setwd("..") 
+getwd() 
+
+# Create objects in R
+x <- 10     # assign the integer number 10 to object x
+x <- 5
+y <- 1:10   # assign the vector (1,2,...,10) to object y  
+
+z <- "a"    # assign the character "a" to object z
+
+# list all the objects in current environment  
+ls() 
+
+# Remove object from current environment 
+rm(x)       		# remove object x
+rm(list = ls())   # remove all objects 
+
+# look up documentation available for a function 
+?rm
+?ls 
+
+################################################################################
+# II. Introduction to data types     
+#
+# The basic data types in R are:
+# 1. numeric 
+# 2. integer 
+# 3. complex 
+# 4. character (a.k.a. string) 
+# 5. logical (a.k.a. boolean) 
+################################################################################
+
+# Provide an example of numeric data type.
+# Use class() to view the class of an object.
+x <- 10.5
+class(x)
+
+# integer
+x <- 1000L
+class(x)
+
+# complex
+x <- 9i + 3
+class(x)
+
+# character/string
+x <- "R is exciting"
+class(x)
+
+# logical/boolean
+x <- TRUE
+class(x) 
+
+################################################################################
+# III. Introduction to data structures 
+#
+# R basic data structures are:
+# 1. Vectors
+# 2. Lists
+# 3. Matrices
+# 4. Arrays
+# 5. Data frames
+# 6. Factors
+################################################################################
+
+################################################################################
+# Vectors: all the elements of a vector are of the same class
+################################################################################
+
+# Look up function c(): combine values into a vector or a list 
+?c # note: c is mnemonic for concatenate
+
+# Crate a vector using c()
+x <- c(0.5, 0.6, 0.7)    
+class(x)                    # the type of entries of the vector x
+is.vector(x)
+
+x <- c(1:10)                # integer
+x <- c(TRUE, FALSE)         # logical
+x <- c("a", "b", "c")    	 # character
+x <- c(1+0i, 2+3i)          # complex
+x <- c(1, "a", TRUE, 1+4i, 1.4) # R coerces every elements to character
+
+# View the length of an object 
+length(x)
+
+# Explore function paste(): concatenate vectors after converting to characters   
+?paste 
+paste(1:3) 
+paste(1:3, collapse = "")
+paste(1:3, c("a", "b", "c")) # if the arguments are vectors, they are concatenated term-by-term
+paste0(1:3, c("a", "b", "c"), c("d","e","f"))
+# Explore function rep(): replicate elements of vectors and lists  
+?rep 
+rep(x="a", times = 10)
+
+# Explore function seq(): generate sequence
+?seq
+x <- seq(from = 0, to = 10, by = 2)
+x <- seq(from = 1, to = 10, length.out = 20)
+
+# Create a vector with a "missing" element 
+x <- c(1, NA, 4, 5)
+
+# Create a logical vector which tells whether each element is a missing value 
+is.na(x)
+
+# Count the number of elements missing
+sum(is.na(x))
+
+# Create a logical vector which tells whether each element is NOT a missing value 
+!is.na(x)
+
+# Count the number of elements not missing
+sum(!is.na(x))
+
+# Show situations that produce NaN (i.e., Not a Number)
+0/0 
+Inf - Inf 
+
+# Explore sub-setting (remember: R indexes start from 1!!!)
+x <- 1:10
+x
+x[3] # 3rd element, left to right
+x[3:6] # from 3rd to 6th element, left to right
+x[-3:-6] # exclude elements from 3rd to 6th, left to right
+x[length(x)] # last element
+
+################################################################################
+# Lists: gather together elements that may be of different classes 
+################################################################################
+
+# Create a list with an integer element, a character element, a logical element,
+# a complex element and a numeric element.
+x <- list(1L, "a", TRUE, 1+4i, 1.4)
+class(x)
+str(x)
+x
+is.list(x)
+
+x = list()
+x
+x <- append(x, 3)
+x
+# Access the 2nd element of a list by position
+print(paste("This is the 2nd element of list x = ", x[[2]]))
+
+# Create a named list
+x <- list(integer_example = 1L, 
+          character_example = "a", 
+          local_example = TRUE, 
+          complex_example = 1+4i, 
+          numeric_example = 1.4)
+
+# Access the 2nd element of a list by position
+x[[2]]
+
+# Access the 2nd element of a list by name
+x["character_example"]
+x$character_example
+
+# Access the 2nd and last element of a list by name
+x_sublist <- x[c("character_example", "numeric_example")]
+class(x_sublist)
+str(x_sublist)
+
+################################################################################
+# Matrices: a two dimensional data set with columns and rows
+################################################################################
+
+# Create an empty matrix with 2 rows and 3 columns 
+m <- matrix(nrow = 2, ncol = 3)
+m
+dim(m)
+is.matrix(m)
+
+# Show common mistake: this will NOT create 2 rows and 3 columns 
+# Note: always explicitly name the arguments
+m <- matrix(2,2, 3)
+m
+dim(m) 
+m <- matrix(data = 2, nrow = 3)
+m
+dim(m) 
+
+# Create matrix with given values (by default it fills col 1, col 2, etc.)
+m <- matrix(data = 1:6, nrow = 3, ncol = 2, byrow = FALSE)
+m
+m <- matrix(data = 1:6, nrow = 2, ncol = 3, byrow = TRUE)
+m
+
+# Show another way to create a matrix by combining vectors using cbind() or rbind()
+x <- 1:3 
+y <- c("a", "b", "c")
+m <- cbind(x, y)  # combine by columns
+m
+str(attributes(m))
+m <- rbind(x, y)  # combine by rows (i.e., stack)
+m
+
+# Print the first row
+m[1,]
+
+# Print the first column
+m[,1]
+
+# List the attributes of the matrix
+attributes(m)
+str(attributes(m))
+
+# Change the names of second dimension 
+dimnames(m)
+dimnames(m)[[2]] <- c("col1", "col2", "col3")
+m
+
+# Show a few matrix operations 
+x <- matrix(data = 1:4, nrow = 2, ncol = 2)
+y <- matrix(data = rep(10, 4), nrow = 2, ncol = 2)
+x*y       # element-wise multiplication
+x/y       # element-wise division
+x %*% y   # true matrix multiplication 
+solve(x) # take inverse
+solve(x) %*% x
+det(x) # compute determinant
+
+rm(list = ls())   # remove all objects 
+
+################################################################################
+# Arrays: a 3+ dimensional data set with columns and rows
+################################################################################
+a <- array(data = 1:24, dim = c(4, 3, 2)) # dim = c(num rows, num col, num 3rd dimension, etc.)
+a
+is.array(a)
+
+################################################################################
+# Data Frames: data displayed in a format as a table. 
+# Data Frames can have different types of data inside it. While the first column 
+# can be character, the second and third can be numeric or logical. 
+# However, each column should have the same type of data.
+################################################################################
+
+# Create a data frame
+df <- data.frame (
+  training = c("Strength", "Stamina", "Other"),
+  pulse = c(100, 150, 120),
+  duration = c(60, 30, 45)
+)
+is.data.frame(df)
+
+# Print to stout the dataframe and tally the number of rows and columns
+df
+dim(df)
+
+# Produce a few descriptive stats for each (non character) column
+summary(df)
+
+# Print to stout the first (last) 5 rows
+head(df, 5) 
+tail(df, 5) 
+
+# Access the 2nd column by position or name
+df[2]
+df[["pulse"]]
+df$pulse
+
+# Change name of columns
+names(df) <- c("Train", "Pulse", "Duration")
+df
+
+# Add a row
+df <- rbind(df, c("Strength", 110, 110))
+df
+
+# Add a column
+df <- cbind(df, Steps = c(1000, 6000, 2000, 500))
+df
+
+# Create a new dataframe by removing the first row and column
+df_2 <- df[-c(1), -c(1)]
+df_2
+
+# Create a new dataframe by removing columns by name
+x <- !(names(df) %in% c("Train","Steps"))
+x
+df_2 <- df[, x]
+df_2
+
+df_2 <- subset(df, select = -c(Train,Steps))
+df_2
+
+# Combine two dataframes by putting them side by side
+names(df_2) <- paste0(names(df_2),"2")
+df_comb <- cbind(df, df_2)
+df_comb
+
+# Combine two dataframes by stacking them
+df_comb <- rbind(df, df)
+df_comb
+rm(list = ls())   # remove all objects 
+
+################################################################################
+# IV. Create functions and call source code 
+################################################################################
+
+# To tutorial taker: create a R script named "Tutorial-myfncs.R", 
+# and copy and paste the lines of code below, then un-comment them:
+
+# # Function to subtract 1 from the input
+# minusOne <- function(x){
+#   x - 1    #the function will return the output from the last line
+# }
+# 
+# # Function to add and subtract 1 from the input
+# plusminusOne <- function(x){
+#   return(list(res_plus=x + 1, res_minus = x - 1))
+# }
+# 
+# # Function that installs one or more packages if they are not yet installed
+# install_packages_if_needed <- function(list_of_packages){
+#   new_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
+#   if(length(new_packages)>0) install.packages(new_packages)
+# }
+
+# Source the functions stored in a separate R file
+source("./Tutorial-myfncs.R")
+
+# Create a list of 10 numbers, from 1 through 10
+x <- 1:10 
+
+# Apply the sourced functions to the list
+minusOne(x)
+plusminusOne(x)
+plusminusOne(x)$res_plus
+plusminusOne(x)$res_minus
+rm(x)   # remove all objects 
+
+################################################################################
+# V. Install and load packages     
+################################################################################
+
+# Install a package called Rlab
+install.packages(c("Rlab")) 
+
+# After installing, you may want to load the package using library()
+# if you do not load it, you will need to write <package-name::name-of-fnc> each
+# time you call a function from the package (which is good practice anyway)
+library(Rlab)
+
+# Use a function from the package
+?Rlab::rbern()
+set.seed(12345678)
+Rlab::rbern(n = 10, prob = 0.5)
+set.seed(12345678)
+rbern(n = 10, prob = 0.5)
+remove.packages("Rlab")
+
+# Install a package called data.table
+# note: Use the fnc sourced from Tutorial-myfncs.R 
+install_packages_if_needed(c("data.table")) 
+
+# Check whether the installation worked by creating an object of type data table
+dt <- data.table::data.table(var1 = rnorm(10), var2 = c(1:10))
+dt
+class(dt)
+rm(list = ls())
+
+################################################################################
+# VI. Generate data via drawing pseudo random numbers.
+#     Draw some basic plots.
+################################################################################
+
+# Set the state of random seed (set.seed is base R)
+set.seed(20) 
+
+# Generate 100 random numbers from standard normal distribution
+?stats::rnorm
+x1 <- rnorm(100)
+
+# Generate 100 random numbers from poisson distribution
+x2 <- rpois(100, lambda = 5)
+
+# Sample 100 numbers from {1, 2, 3} with replacement
+?sample
+x3 <- sample(x = c(1:3), size = 100, replace = TRUE)
+
+# Generate Y as a linear combination of X1, X2 and X3
+y <- 0.5 + 2 * x1 + 3 * x2 + x3 
+
+# Create a data frame containing the above data  
+df <- data.frame(x1, x2, x3, y) 
+class(df) 
+
+# Print to standard output the column names 
+colnames(df)
+
+# Change the column names 
+colnames(df) <- c("x1", "w2", "x3", "y")
+
+# Assign a specific column name 
+colnames(df)[2] <- "z2"
+
+# Draw a generic x-y plot 
+plot(df$x1, df$y,
+     main = "Scatter plot of Y versus X1", 
+     ylab = "y",
+     xlab = "x1",
+     col = "blue",
+)
+
+# Draw a histogram plot for the 1st column of the dataframe
+p <- hist(df$x1, main = "Histogram of x1")
+
+# Draw a boxplot
+boxplot(df$x1)
+
+# Generate a variable with value either "Female" or "Male"
+x4 <- sample(x = c("Female", "Male"), size = 100, replace = TRUE)
+
+# Add the new variable as a column to the data frame 
+df["x4"] <- x4
+head(df, 10)
+
+################################################################################
+# VII. Explore data.table: an enhanced version of data.frame.
+# https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
+################################################################################
+
+# Convert data frame to data table
+dt <- data.table::as.data.table(df)
+class(dt)
+class(df)
+
+# Assign convenient names to columns
+data.table::setnames(x = dt, old = names(dt), 
+                     new = c("standardized_score",
+                             "completed_credits",
+                             "income_group",
+                             "hourly_wage",
+                             "gender"))
+
+# Compute the average of each numerical column for males and females separately
+?lapply
+dt[, lapply(X = .SD, FUN = mean), by = gender]
+
+# Compute the average of two column by gender and income group
+dt[, lapply(.SD, mean),
+   by = .(income_group, gender),
+   .SDcols = c("standardized_score", "hourly_wage")
+   ][order(-gender, income_group), ]
+
+################################################################################
+# VIII. Explore dplyr: a package for manipulation of data frames.
+# Practice with cheat sheet: https://nyu-cdsc.github.io/learningr/assets/data-transformation.pdf
+################################################################################
+
+# Install package 
+install_packages_if_needed(c("dplyr"))
+
+# Simplify how we call the piping function %>%.
+`%>%` <- dplyr::`%>%`
+
+# Average y by x4
+df %>%
+  dplyr::group_by(x4) %>%
+  dplyr::summarise(avg_y = mean(y))
+
+# Average y by x4
+library(dplyr) # attach
+df %>%
+  group_by(x4) %>%
+  summarise(avg_y = mean(y))
+
+################################################################################
+# IX. Export and Import Data  
+################################################################################
+
+################################################################################
+# R has two Data Format: RDS and RDATA 
+################################################################################
+
+# Write to and read from RDS file
+
+# Export data to RDS file 
+saveRDS(object = df, file = "Tutorial-data.rds")
+
+# Import data from RDS file to R  (readRDS is base R)
+df_2 <- readRDS(file = "Tutorial-data.rds")
+
+# Install package to compare dataframes
+install_packages_if_needed(c("arsenal")) # to compare data frames
+arsenal::comparedf(df, df_2)
+
+# Save multiple objects: two dataframe and a character string
+myname <- "Melissa"
+save(df, df_2, myname, file = "Tutorial-data.RData") # or .rda extension
+
+# Load back the data 
+rm(df_2, myname, df)
+load("Tutorial-data.RData")
+
+################################################################################
+# R can read and write to non-R formats: CSV, TXT, DTA
+# We illustrate these actions using e.g. utils package which comes with any R
+# distributions. To speed up the reading/writing use instead package readr
+# http://www.sthda.com/english/wiki/fast-reading-of-data-from-txt-csv-files-into-r-readr-package
+################################################################################
+
+# Write to and read from CSV file
+
+# Export data to CSV file 
+utils::write.csv(df, file="Tutorial-data.csv")
+dir()
+
+# Export data to CSV file so that the index column does not appear
+# as the first column in the CSV file
+utils::write.csv(df, file="Tutorial-data.csv", row.names = FALSE)
+dir()
+
+# Read CSV file 
+df_3 <- utils::read.csv(file = "Tutorial-data.csv")
+arsenal::comparedf(x = df, y = df_3)
+
+# Install package to write to and read from DTA Stata file
+install_packages_if_needed(c("foreign"))
+
+# Export data to STATA file
+foreign::write.dta(dataframe = df, file = "Tutorial-data.dta")
+
+# Import STATA file to R
+df_4 <- foreign::read.dta(file = "Tutorial-data.dta")
+arsenal::comparedf(x = df, y = df_4) 
+
+# Install package to write to and read from XLX file
+install_packages_if_needed(c("openxlsx"))
+
+# Export the data  to an excel file
+openxlsx::write.xlsx(x = df, file="Tutorial-data.xlsx", sheetName = "test-name")
+dir()
+
+# Read data from an excel file
+df_5 <- openxlsx::read.xlsx(xlsxFile = "Tutorial-data.xlsx", 
+                            sheet = "test-name",
+                            startRow = 1, colNames = TRUE)
+df_5
+arsenal::comparedf(x = df, y = df_5) 
+rm(df_2, df_3, df_4, df_5)
+
+################################################################################
+# X. Loops  
+################################################################################
+
+# Loop over the rows of a data frame
+for (row in 1:nrow(df)){
+  if (df$x4[row]=="Female") {
+    print(paste("Row", row, "pertains to a female subject."))
+  }
+}
+
+# Loop over selected columns of a data frame
+for (col_name in c("z2", "y")){
+  print(paste("======Average of colum", col_name))
+  print(mean(df[[col_name]]))
+}
+
+# Repeat an operation until a condition is met
+starting_num <-  30
+num <- starting_num
+while (num > 20){
+  num <- num -1
+  print(paste("After subtracting 1, num is", num))
+}
+
+################################################################################
+# XI. Send R output to file
+# Note: to produce reports with text, script and output consider R markdown instead
+################################################################################
+
+# Start diverting output to file
+file <- "./Tutorial-output.txt"
+sink(file = file, append = FALSE, split = FALSE)
+
+# Execute something
+print("============== this is Melissa's output =======")
+i <- 1:10
+?outer
+outer(i, i) # outer product of arrays
+
+# Stop diverting output to file
+sink()
+
+################################################################################
+# XII. Explore function stats::lm()
+################################################################################
+
+# Estimate the parameters of a linear model
+lm_obj <- lm(formula = y ~ x4, data = df)
+class(lm_obj)
+lm_obj
+summary(lm_obj)
+
+# Take a close look at the coefficient estimates
+lm_obj$coefficients
+coef(lm_obj)
+coef(lm_obj)["(Intercept)"]
+unname(coef(lm_obj)["(Intercept)"])
+
+# Draw scatter plot of residuals vs fitted
+plot(lm_obj, which = 1)
+
+# Draw scatter plot of fitted dep var vs dep var
+plot(lm_obj$fitted.values, lm_obj$model$y, xlab = "Fitted (predicted) y", ylab = "Observed y")
+
+# Histogram of residuals
+hist(lm_obj$residuals)
+
+# Install the car package
+install_packages_if_needed(c("car"))
+
+# Test linear hypotheses
+# See https://rdrr.io/cran/car/man/linearHypothesis.html
+car::linearHypothesis(model = lm_obj, hypothesis.matrix)
+
+## Test single hypothesis that slope coefficient is zero: in 4 equivalent ways
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = c("x4Male = 0"))
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = c("x4Male"), rhs = c(0))
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = c("x4Male"))
+
+## Test joint hypothesis that slope coefficient is 0.5 and intercept is 0: in 4 equivalent ways
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = diag(2), rhs = c(0,0.5))
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = c("(Intercept) = 0", "x4Male = 0.5"))
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = c("(Intercept)", "x4Male"), rhs = c(0,0.5))
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = c("(Intercept)", "x4Male = 0.5"))
+
+## Test joint hypothesis that slope coefficient equals intercept
+car::linearHypothesis(model = lm_obj, hypothesis.matrix = c("(Intercept) = x4Male"))
+
+
+
+

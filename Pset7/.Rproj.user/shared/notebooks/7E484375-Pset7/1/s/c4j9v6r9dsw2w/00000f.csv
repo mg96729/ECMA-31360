@@ -1,0 +1,3 @@
+"0","rm(list = ls())"
+"0","dt_ff <- data.table::as.data.table(utils::read.delim(file = ""fast-food-data.csv"","
+"0","                                    sep = "",""))"

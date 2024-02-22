@@ -1,0 +1,8 @@
+"0","dd <- stats::lm(formula = earns ~ dyear2 + treat + tdyear2, data = dt_long)"
+"0","dd$coefficients[4]"
+"1"," tdyear2 "
+"1","
+"
+"1","2326.505 "
+"1","
+"

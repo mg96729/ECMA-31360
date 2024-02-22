@@ -1,0 +1,3 @@
+"0","dt_ff <- dt_ff %>% mutate(.data = dt_ff, "
+"0","                 fte = empft+nmgrs+0.5*emppt,"
+"0","                 fte2 = empft2+nmgrs2+0.5*emppt2)"

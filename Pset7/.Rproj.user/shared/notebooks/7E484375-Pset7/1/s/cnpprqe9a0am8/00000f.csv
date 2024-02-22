@@ -1,0 +1,6 @@
+"0","dt_treat <- dt_long[dt_long$treat == 1,]"
+"0","nrow(dt_treat)"
+"1","[1]"
+"1"," 370"
+"1","
+"

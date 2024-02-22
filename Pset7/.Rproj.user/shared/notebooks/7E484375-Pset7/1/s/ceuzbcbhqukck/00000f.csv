@@ -1,0 +1,5 @@
+"0","dt_ff %>% group_by(state)%>%"
+"0","          summarise("
+"0","            mean_fte = mean(fte, na.rm = T),"
+"0","            mean_fte2 = mean(fte2, na.rm = T)"
+"0","          )"

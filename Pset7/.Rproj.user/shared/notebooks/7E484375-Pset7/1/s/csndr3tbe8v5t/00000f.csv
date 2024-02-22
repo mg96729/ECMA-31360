@@ -1,0 +1,3 @@
+"0","dt_ff_long <- tidyr::gather(dt_ff, wave, fte, fte:fte2)"
+"0","dt_ff_long <- data.table::as.data.table(dt_ff_long)"
+"0","dt_ff_long$wave<-ifelse(dt_ff_long$wave==""fte"",0,1)"
